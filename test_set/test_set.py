@@ -8,9 +8,9 @@ import tensorflow_datasets as tfds
 class TestSet(tfds.core.GeneratorBasedBuilder):
     """DatasetBuilder for test_set dataset."""
 
-    VERSION = tfds.core.Version("1.0.0")
+    VERSION = tfds.core.Version("1.0.1")
     RELEASE_NOTES = {
-        "1.0.0": "Initial release.",
+        "1.0.1": "KeyError Fixed.",
     }
 
     def _info(self) -> tfds.core.DatasetInfo:
@@ -25,7 +25,7 @@ class TestSet(tfds.core.GeneratorBasedBuilder):
                     "gross": tf.int64,
                 }
             ),
-            supervised_keys=("film_synopsis", "gross"),
+            supervised_keys=("synopsis", "gross"),
             citation="",
         )
 
