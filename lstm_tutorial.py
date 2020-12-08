@@ -10,7 +10,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 # Hide GPU from visible devices - getting cudnn issues
-# tf.config.set_visible_devices([], "GPU")
+tf.config.set_visible_devices([], "GPU")
 
 
 def plot_graphs(history, metric):
@@ -45,7 +45,7 @@ train_dataset = (
 test_dataset = test_dataset.batch(BATCH_SIZE).prefetch(tf.data.experimental.AUTOTUNE)
 
 
-VOCAB_SIZE = 1000
+VOCAB_SIZE = 10000
 encoder = tf.keras.layers.experimental.preprocessing.TextVectorization(
     max_tokens=VOCAB_SIZE
 )
