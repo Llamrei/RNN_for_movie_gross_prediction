@@ -1,1 +1,7 @@
+# VSCode junk
+.vscode
+
+# Python junk
+*.pickle
 venv
+*.pyc
