@@ -4,6 +4,10 @@ import tensorflow as tf
 import pickle as pkl
 import tensorflow_datasets as tfds
 
+# TFDS is for downloading _their_ datasets
+# tf.data module
+# from_tensor_slices
+
 
 class TestSet(tfds.core.GeneratorBasedBuilder):
     """DatasetBuilder for test_set dataset."""
