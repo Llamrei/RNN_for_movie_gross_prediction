@@ -5,3 +5,5 @@
 *.pickle
 venv
 *.pyc
+
+!venv/Lib/site-packages/tensorflow/python/keras/layers/preprocessing/text_vectorization.py

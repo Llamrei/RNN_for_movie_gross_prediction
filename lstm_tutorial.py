@@ -39,6 +39,19 @@ def split_data_into_input_and_output(data):
     return np.array(data_in), np.array(data_out)
 
 
+def add_signal(data):
+    """
+    If the given data has no signal we cant fit a NN to it. As such, here we append how much the film grossed
+    into the synopsis of each title.
+
+    Args:
+        data (list): A numpy array/list of named tuples which contains entries for 'gross',
+        'title', 'synopsis' and 'year'.
+    """
+    for row in data:
+        row["synopsis"] = row["synopsis"] + f' The film grossed ${data["gross"]}'
+
+
 data = pkl.load(open("complete10000_films_and_synopsis.pickle", "rb"))
 random.shuffle(data)
 
@@ -73,7 +86,7 @@ model = tf.keras.Sequential(
     [
         encoder,
         tf.keras.layers.Embedding(
-            input_dim=len(encoder.get_vocabulary()) + 2, output_dim=64
+            input_dim=len(encoder.get_vocabulary()) + 2, output_dim=64, mask_zero=True
         ),
         tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(64)),
         tf.keras.layers.Dense(64, activation="relu"),
