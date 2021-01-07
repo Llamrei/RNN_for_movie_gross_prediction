@@ -3,7 +3,15 @@
 
 # Python junk
 *.pickle
+*.pkl
 venv
 *.pyc
 
 !venv/Lib/site-packages/tensorflow/python/keras/layers/preprocessing/text_vectorization.py
+
+# Experiment results/junk
+.ipynb_checkpoints
+*.pdf
+*.png
+
+!figs/*
