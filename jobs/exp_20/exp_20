@@ -1,21 +1,21 @@
 #!/bin/bash
 #PBS -lselect=1:ncpus=8:mem=48gb:ngpus=2:gpu_type=RTX6000
-#PBS -lwalltime=1:30:0
+#PBS -lwalltime=3:00:0
 
 set +x
 echo "Started"
 date
 
 input_data_path="$HOME/RNN_for_movie_gross_prediction/complete10000_films_and_synopsis.pickle"
-output_dir="$HOME/RNN_for_movie_gross_prediction/jobs/exp_18/outputs/$(date +%Y%m%d_%H%M)"
-script_dir="$HOME/RNN_for_movie_gross_prediction/jobs/exp_18"
+output_dir="$HOME/RNN_for_movie_gross_prediction/jobs/exp_20/outputs/$(date +%Y%m%d_%H%M)"
+script_dir="$HOME/RNN_for_movie_gross_prediction/jobs/exp_20"
 
 mkdir $output_dir
 cd $script_dir
 
 module load anaconda3/personal
 source activate tensorflow2
-python exp_18.py "$output_dir" "$input_data_path" 1>"$output_dir/stdout"
+python exp_20.py "$output_dir" "$input_data_path" 1>"$output_dir/stdout"
 
 echo "Done"
 date

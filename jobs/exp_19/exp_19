@@ -7,15 +7,15 @@ echo "Started"
 date
 
 input_data_path="$HOME/RNN_for_movie_gross_prediction/complete10000_films_and_synopsis.pickle"
-output_dir="$HOME/RNN_for_movie_gross_prediction/jobs/exp_18/outputs/$(date +%Y%m%d_%H%M)"
-script_dir="$HOME/RNN_for_movie_gross_prediction/jobs/exp_18"
+output_dir="$HOME/RNN_for_movie_gross_prediction/jobs/exp_19/outputs/$(date +%Y%m%d_%H%M)"
+script_dir="$HOME/RNN_for_movie_gross_prediction/jobs/exp_19"
 
 mkdir $output_dir
 cd $script_dir
 
 module load anaconda3/personal
 source activate tensorflow2
-python exp_18.py "$output_dir" "$input_data_path" 1>"$output_dir/stdout"
+python exp_19.py "$output_dir" "$input_data_path" 1>"$output_dir/stdout"
 
 echo "Done"
 date

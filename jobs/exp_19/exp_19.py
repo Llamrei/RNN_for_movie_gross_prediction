@@ -28,7 +28,7 @@ BUFFER_SIZE = 10000
 # Batch for gradient averaging
 BATCH_SIZE = 64
 # Specify encoding of words
-SUBSET_VOCAB_SIZE = 10000
+SUBSET_VOCAB_SIZE = 500
 OUTPUT_DIR = sys.argv[1]
 GROSS_SYNOPSES_PATH = sys.argv[2]
 
@@ -90,7 +90,7 @@ def clean_copy(data, min_length=10):
     return cleaned_data
 
 
-def confusion_plot(lab, pred, name):
+def confusion_plot(lab, pred, name, new_plot=False, save=False):
     """
     Helper function to pile on scatter plots of labels and predictions that are real numbers
     marking a helpful black line for the truth

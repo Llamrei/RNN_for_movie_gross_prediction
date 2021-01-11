@@ -90,7 +90,7 @@ def clean_copy(data, min_length=10):
     return cleaned_data
 
 
-def confusion_plot(lab, pred, name):
+def confusion_plot(lab, pred, name, new_plot=False, save=False):
     """
     Helper function to pile on scatter plots of labels and predictions that are real numbers
     marking a helpful black line for the truth
@@ -110,13 +110,12 @@ def confusion_plot(lab, pred, name):
 
 
 raw_data = pkl.load(open(GROSS_SYNOPSES_PATH, "rb"))
-raw_data["gross"] = np.log(raw_data["gross"])
 
 histories = dict()
 models = dict()
-experimental_range = [0]
-for min_words in experimental_range:
-    real_data = clean_copy(raw_data, min_words)
+experimental_range = [100, 500, 1000, 5000, 10000, 50000]
+for vocab_size in experimental_range:
+    real_data = clean_copy(raw_data, 0)
     # Ensures that not only a certain gross of film make it into train/test sets respectively
     np.random.shuffle(real_data[500:])
     data = real_data
@@ -130,10 +129,11 @@ for min_words in experimental_range:
     # Store what we trained this network on
     pkl.dump(
         data[:train_end],
-        open(f"{OUTPUT_DIR}/words_{min_words}/train_data.pickle", "wb"),
+        open(f"{OUTPUT_DIR}/vocab_size_{vocab_size}/train_data.pickle", "wb"),
     )
     pkl.dump(
-        data[train_end:], open(f"{OUTPUT_DIR}/words_{min_words}/test_data.pickle", "wb")
+        data[train_end:],
+        open(f"{OUTPUT_DIR}/vocab_size_{vocab_size}/test_data.pickle", "wb"),
     )
 
     # Make dataset objects
@@ -145,12 +145,12 @@ for min_words in experimental_range:
     test_dataset = test_dataset.batch(BATCH_SIZE).prefetch(5)
 
     encoder = tf.keras.layers.experimental.preprocessing.TextVectorization(
-        max_tokens=SUBSET_VOCAB_SIZE, ngrams=1
+        max_tokens=vocab_size, ngrams=1
     )
     encoder.adapt(train_dataset.map(lambda text, label: text))
 
     # Specify overall architecture
-    models[min_words] = tf.keras.Sequential(
+    models[vocab_size] = tf.keras.Sequential(
         [
             encoder,
             tf.keras.layers.Embedding(
@@ -162,12 +162,12 @@ for min_words in experimental_range:
             tf.keras.layers.Dense(1),
         ]
     )
-    models[min_words].compile(
+    models[vocab_size].compile(
         loss=tf.keras.losses.MeanSquaredError(),
         optimizer=tf.keras.optimizers.Adam(0.1),
     )
 
-    checkpoint_dir = f"{OUTPUT_DIR}/words_{min_words}/checkpoints"
+    checkpoint_dir = f"{OUTPUT_DIR}/vocab_size_{vocab_size}/checkpoints"
     checkpoint_path = f"{checkpoint_dir}/{{epoch:04d}}_ckpt"
     # Create a callback that saves the model's weights every epoch
     cp_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -178,7 +178,7 @@ for min_words in experimental_range:
 
     # Train
     existing_checkpoints = glob.glob(
-        f"{OUTPUT_DIR}/words_{min_words}/checkpoints/*_ckpt"
+        f"{OUTPUT_DIR}/vocab_size_{vocab_size}/checkpoints/*_ckpt"
     )
     if existing_checkpoints:
         latest_checkpoint = max(existing_checkpoints, key=os.path.getctime)
@@ -192,7 +192,7 @@ for min_words in experimental_range:
     else:
         print("No existing checkpoints - training from scratch")
         epoch_reached = 0
-    histories[min_words] = models[min_words].fit(
+    histories[vocab_size] = models[vocab_size].fit(
         train_dataset,
         epochs=100 - epoch_reached,
         validation_data=test_dataset,
@@ -202,11 +202,11 @@ for min_words in experimental_range:
 
     # Look at performance
     plt.figure(figsize=(11, 8), dpi=300)
-    pred_train = models[min_words].predict(train_data_in)
-    confusion_plot(train_data_out, pred_train, f"{min_words}-train")
-    pred_test = models[min_words].predict(test_data_in)
-    confusion_plot(test_data_in, pred_test, f"{min_words}-test")
-    plt.savefig(f"{OUTPUT_DIR}/confusion_{min_words}.png")
+    pred_train = models[vocab_size].predict(train_data_in)
+    confusion_plot(train_data_out, pred_train, f"{vocab_size}-train")
+    pred_test = models[vocab_size].predict(test_data_in)
+    confusion_plot(test_data_in, pred_test, f"{vocab_size}-test")
+    plt.savefig(f"{OUTPUT_DIR}/confusion_{vocab_size}.png")
 
 for a in experimental_range:
     plot_graphs(histories[a], "loss", f"loss_{a}")
