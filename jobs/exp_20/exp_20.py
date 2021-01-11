@@ -127,14 +127,13 @@ for vocab_size in experimental_range:
     test_data_in, test_data_out = split_data_into_input_and_output(data[train_end:])
 
     # Store what we trained this network on
+    SPECIFIC_OUTPUT_DIR = f"{OUTPUT_DIR}/vocab_size_{vocab_size}"
+    if not os.path.exists(SPECIFIC_OUTPUT_DIR):
+        os.makedirs(SPECIFIC_OUTPUT_DIR)
     pkl.dump(
-        data[:train_end],
-        open(f"{OUTPUT_DIR}/vocab_size_{vocab_size}/train_data.pickle", "wb"),
+        data[:train_end], open(f"{SPECIFIC_OUTPUT_DIR}/train_data.pickle", "wb"),
     )
-    pkl.dump(
-        data[train_end:],
-        open(f"{OUTPUT_DIR}/vocab_size_{vocab_size}/test_data.pickle", "wb"),
-    )
+    pkl.dump(data[train_end:], open(f"{SPECIFIC_OUTPUT_DIR}/test_data.pickle", "wb"))
 
     # Make dataset objects
     train_dataset = tf.data.Dataset.from_tensor_slices((train_data_in, train_data_out))
@@ -167,7 +166,7 @@ for vocab_size in experimental_range:
         optimizer=tf.keras.optimizers.Adam(0.1),
     )
 
-    checkpoint_dir = f"{OUTPUT_DIR}/vocab_size_{vocab_size}/checkpoints"
+    checkpoint_dir = f"{SPECIFIC_OUTPUT_DIR}/checkpoints"
     checkpoint_path = f"{checkpoint_dir}/{{epoch:04d}}_ckpt"
     # Create a callback that saves the model's weights every epoch
     cp_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -177,9 +176,7 @@ for vocab_size in experimental_range:
     )
 
     # Train
-    existing_checkpoints = glob.glob(
-        f"{OUTPUT_DIR}/vocab_size_{vocab_size}/checkpoints/*_ckpt"
-    )
+    existing_checkpoints = glob.glob(f"{SPECIFIC_OUTPUT_DIR}/checkpoints/*_ckpt")
     if existing_checkpoints:
         latest_checkpoint = max(existing_checkpoints, key=os.path.getctime)
         epoch_reached = int(latest_checkpoint.stem.split("_")[0])
