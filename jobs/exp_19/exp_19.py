@@ -203,7 +203,7 @@ for min_words in experimental_range:
     pred_train = models[min_words].predict(train_data_in)
     confusion_plot(train_data_out, pred_train, f"{min_words}-train")
     pred_test = models[min_words].predict(test_data_in)
-    confusion_plot(test_data_in, pred_test, f"{min_words}-test")
+    confusion_plot(test_data_out, pred_test, f"{min_words}-test")
     plt.savefig(f"{OUTPUT_DIR}/confusion_{min_words}.png")
 
 for a in experimental_range:

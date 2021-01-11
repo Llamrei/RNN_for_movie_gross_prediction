@@ -202,7 +202,7 @@ for vocab_size in experimental_range:
     pred_train = models[vocab_size].predict(train_data_in)
     confusion_plot(train_data_out, pred_train, f"{vocab_size}-train")
     pred_test = models[vocab_size].predict(test_data_in)
-    confusion_plot(test_data_in, pred_test, f"{vocab_size}-test")
+    confusion_plot(test_data_out, pred_test, f"{vocab_size}-test")
     plt.savefig(f"{OUTPUT_DIR}/confusion_{vocab_size}.png")
 
 for a in experimental_range:
