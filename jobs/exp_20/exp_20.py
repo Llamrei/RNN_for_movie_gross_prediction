@@ -5,21 +5,18 @@
 """
 Follows https://www.tensorflow.org/tutorials/text/text_classification_rnn
 """
+import glob
+import os
 import pickle as pkl
-import numpy as np
 import random
 import re
 import sys
-import os
-import glob
-
-import tensorflow_datasets as tfds
-import tensorflow as tf
+from datetime import datetime
 
 import matplotlib.pyplot as plt
-
-
-from datetime import datetime
+import numpy as np
+import tensorflow as tf
+import tensorflow_datasets as tfds
 
 datetime.now()
 EXP_NUM = 17
