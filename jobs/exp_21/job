@@ -1,0 +1,41 @@
+#!/bin/bash
+#PBS -lselect=1:ncpus=8:mem=48gb:ngpus=2:gpu_type=RTX6000
+#PBS -lwalltime=7:00:0
+#PBS -J 1-4
+
+# Written with aid of https://devhints.io/bash
+
+set +x
+echo "Started"
+date
+
+exp_num=21
+exp_name="encoder_mode"
+exp_vals=("tf-idf" "int" "count" "binary")
+no_exps="${#exp_vals[@]}"
+
+# For repeating experiments we want to cycle through our experiment values
+# Important fact here is the same array index will give you the same experimental value
+# so if we repeat an experiment multiple times it will always go to the same PBS_ARRAY_INDEX folder
+exp_idx=$(($PBS_ARRAY_INDEX % $no_exps))
+exp_val=${exp_vals[$exp_idx]}
+exp_counter=$(($PBS_ARRAY_INDEX / $no_exps))
+
+# Could use something like  
+# array_id=${PBS_JOBID%\[[0-9]*\].pbs*} 
+# to also group array job outputs if needed but i feel we want to keep results for a given 
+# exp_val in one place
+# This does however mean deletion of results from errors etc. so we can start fresh when needed
+input_data_path="$HOME/RNN_for_movie_gross_prediction/complete10000_films_and_synopsis.pickle"
+output_dir="$HOME/RNN_for_movie_gross_prediction/jobs/exp_$exp_num/outputs/$exp_val/$exp_counter"
+script_dir="$HOME/RNN_for_movie_gross_prediction/jobs/exp_$exp_num"
+
+mkdir -p $output_dir
+cd $script_dir
+
+module load anaconda3/personal
+source activate tensorflow2
+python new_experiment.py "$output_dir" "$input_data_path" "$exp_val" "$exp_name" >> "$output_dir/stdout"
+
+echo "Done"
+date
