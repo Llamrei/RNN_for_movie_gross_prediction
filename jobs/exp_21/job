@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -lselect=1:ncpus=8:mem=48gb:ngpus=2:gpu_type=RTX6000
-#PBS -lwalltime=7:00:0
+#PBS -lwalltime=2:00:0
 #PBS -J 1-4
 
 # Written with aid of https://devhints.io/bash
@@ -34,7 +34,7 @@ mkdir -p $output_dir
 cd $script_dir
 
 module load anaconda3/personal
-source activate tensorflow2
+source activate tf2
 python new_experiment.py "$output_dir" "$input_data_path" "$exp_val" "$exp_name" >> "$output_dir/stdout"
 
 echo "Done"
