@@ -166,6 +166,9 @@ else:
     model = tf.keras.Sequential(
         [
             encoder,
+            tf.keras.layers.Embedding(
+                input_dim=len(encoder.get_vocabulary()), output_dim=64, mask_zero=True
+            ),
             tf.keras.layers.Dense(64, activation="relu"),
             tf.keras.layers.Dense(64, activation="relu"),
             tf.keras.layers.Dense(1),
