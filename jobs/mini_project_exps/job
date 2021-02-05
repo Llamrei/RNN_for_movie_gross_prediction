@@ -8,7 +8,7 @@ echo "Started"
 date
 
 # exp_vals=(mse-{'tfidf','learned','bert'}-core)
-exp_vals=({'mse','mae','mape'}-{'tfidf','learned','bert'}-{'core','shallow-wide','deep-narrow','deep-wide'})
+exp_vals=({'mse','mae','mape'}-{'tfidf','learned','bert'}-{'core','shallow_wide','deep_narrow','deep_wide'})
 no_exps="${#exp_vals[@]}"
 job="${PBS_JOBID%[*}"
 array_idx=$(($PBS_ARRAY_INDEX - 1))

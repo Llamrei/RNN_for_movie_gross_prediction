@@ -241,13 +241,13 @@ def build_model(encoding_strat,model_strat):
     if model_strat == 'core':
         net = tf.keras.layers.Dense(64, activation='relu', name='hidden-1')(net)
         net = tf.keras.layers.Dense(32, activation='relu', name='hidden-2')(net)
-    elif model_strat == 'shallow-wide':
+    elif model_strat == 'shallow_wide':
         net = tf.keras.layers.Dense(2048, activation='relu', name='hidden-1')(net)
-    elif model_strat == 'deep-narrow':
+    elif model_strat == 'deep_narrow':
         net = tf.keras.layers.Dense(64, activation='relu', name='hidden-1')(net)
         net = tf.keras.layers.Dense(32, activation='relu', name='hidden-2')(net)
         net = tf.keras.layers.Dense(16, activation='relu', name='hidden-3')(net)
-    elif model_strat == 'deep-wide':
+    elif model_strat == 'deep_wide':
         net = tf.keras.layers.Dense(128, activation='relu', name='hidden-1')(net)
         net = tf.keras.layers.Dense(64, activation='relu', name='hidden-2')(net)
         net = tf.keras.layers.Dense(32, activation='relu', name='hidden-3')(net)
@@ -296,14 +296,14 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(
     save_freq=2*TRAIN_STEPS_PER_EPOCH,
 )
 csv_logger = tf.keras.callbacks.CSVLogger(OUTPUT_DIR / 'training.csv',append=True)
-early_stopping = tf.keras.callbacks.EarlyStopping(patience=25, mode='min', restore_best_weights=True)
+early_stopping = tf.keras.callbacks.EarlyStopping(patience=25, mode='min', restore_best_weights=True, verbose=1)
 
-class LearningRateLoggingCallback(tf.keras.callbacks.Callback):
+# class LearningRateLoggingCallback(tf.keras.callbacks.Callback):
 
-    def on_epoch_begin(self, epoch, logs=None):
-        lr = tf.keras.backend.get_value(self.model.optimizer.learning_rate)
-        print(f'Learning rate {lr((epoch)*TRAIN_STEPS_PER_EPOCH)}')
-lr = LearningRateLoggingCallback()
+#     def on_epoch_begin(self, epoch, logs=None):
+#         lr = tf.keras.backend.get_value(self.model.optimizer.learning_rate)
+#         print(f'Learning rate {lr((epoch)*TRAIN_STEPS_PER_EPOCH)}')
+# lr = LearningRateLoggingCallback()
 
 train_start = datetime.now()
 pre_trained_history = pre_trained_model.fit(
