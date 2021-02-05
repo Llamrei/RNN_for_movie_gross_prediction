@@ -1,0 +1,35 @@
+#!/bin/bash
+#PBS -lselect=1:ncpus=8:mem=48gb:ngpus=2:gpu_type=RTX6000
+#PBS -lwalltime=06:00:0
+#PBS -J 1-108
+
+set +x
+echo "Started"
+date
+
+# exp_vals=(mse-{'tfidf','learned','bert'}-core)
+exp_vals=({'mse','mae','mape'}-{'tfidf','learned','bert'}-{'core','shallow-wide','deep-narrow','deep-wide'})
+no_exps="${#exp_vals[@]}"
+job="${PBS_JOBID%[*}"
+array_idx=$(($PBS_ARRAY_INDEX - 1))
+
+# For repeating experiments we want to cycle through our experiment values
+# Important fact here is the same array index will give you the same experimental value
+# so if we repeat an experiment multiple times it will always go to the same PBS_ARRAY_INDEX folder
+exp_idx=$(($array_idx % $no_exps))
+exp_val=${exp_vals[$exp_idx]}
+exp_counter=$(($array_idx / $no_exps))
+
+input_data_path="$HOME/RNN_for_movie_gross_prediction/complete10000_films_and_synopsis.pickle"
+script_dir="$HOME/RNN_for_movie_gross_prediction/jobs/mini_project_exps/"
+output_dir="$EPHEMERAL/mini_project_exps/$job/$exp_val/$exp_counter"
+
+mkdir -p $output_dir
+cd $script_dir
+
+module load anaconda3/personal
+source activate tf2-w-text
+python experiment.py "$output_dir" "$input_data_path" "$exp_val" &>"$output_dir/stdout"
+
+echo "Done"
+date
