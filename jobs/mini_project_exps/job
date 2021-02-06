@@ -1,14 +1,14 @@
 #!/bin/bash
 #PBS -lselect=1:ncpus=8:mem=48gb:ngpus=2:gpu_type=RTX6000
-#PBS -lwalltime=06:00:0
-#PBS -J 1-36
+#PBS -lwalltime=00:30:0
+#PBS -J 1-2
 
 set +x
 echo "Started"
 date
 
-# exp_vals=(mse-{'tfidf','learned','bert'}-core)
-exp_vals=({'mse','mae','mape'}-{'tfidf','learned','bert'}-{'core','shallow_wide','deep_narrow','deep_wide'})
+exp_vals=(mse-{'tfidf','learned'}-core)
+# exp_vals=({'mse','mae','mape'}-{'tfidf','learned','bert'}-{'core','shallow_wide','deep_narrow','deep_wide'})
 no_exps="${#exp_vals[@]}"
 job="${PBS_JOBID%[*}"
 array_idx=$(($PBS_ARRAY_INDEX - 1))

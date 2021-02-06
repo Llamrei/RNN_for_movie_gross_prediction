@@ -27,7 +27,7 @@ import tensorflow_datasets as tfds
 import tensorflow_hub as hub
 import tensorflow_text as text
 
-start = datetime.now()
+train_start = datetime.now()
 print(f"In Python {datetime.now()}")
 
 # How much it loads into memory for sampling - we're ok just loading everything at once as it isn't a lot of data
@@ -36,7 +36,7 @@ BUFFER_SIZE = 10000
 BATCH_SIZE = 64
 # Specify encoding of words
 VOCAB_SIZE = 5000
-START = start.strftime('%Y-%m-%d-%H%M')
+START = train_start.strftime('%Y-%m-%d-%H%M')
 OUTPUT_DIR = Path(sys.argv[1])
 GROSS_SYNOPSES_PATH = sys.argv[2]
 EXP_STR = sys.argv[3]
@@ -217,7 +217,7 @@ def build_encoding(encoding_strat, text_input):
         # Step 2 (optional): modify tokenized inputs.
 
         # Step 3: pack input sequences for the Transformer encoder.
-        seq_length = 50  # We filter out anything less earlier
+        seq_length = 50  # We filter out anything more earlier
         bert_pack_inputs = hub.KerasLayer(
             preprocessor.bert_pack_inputs,
             arguments=dict(seq_length=seq_length), name='input_packer')  # Optional argument.
@@ -296,7 +296,7 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(
     save_freq=2*TRAIN_STEPS_PER_EPOCH,
 )
 csv_logger = tf.keras.callbacks.CSVLogger(OUTPUT_DIR / 'training.csv',append=True)
-early_stopping = tf.keras.callbacks.EarlyStopping(patience=25, mode='min', restore_best_weights=True, verbose=1)
+early_stopping = tf.keras.callbacks.EarlyStopping(patience=25, mode='min', restore_best_weights=False, verbose=1)
 
 # class LearningRateLoggingCallback(tf.keras.callbacks.Callback):
 
@@ -318,7 +318,7 @@ pre_trained_history = pre_trained_model.fit(
 print(f"Training took {datetime.now()-train_start}")
 
 pred_train = pre_trained_model.predict(train_data_in)
-pred_test = pre_trained_model.predict(test_dataset)
+pred_test = pre_trained_model.predict(test_data_in)
 trained_mean = np.mean(train_data_out)
 trained_median = np.median(train_data_out)
 
@@ -333,6 +333,37 @@ plt.savefig(OUTPUT_DIR / "pretrained_confusion.png")
 plot_graphs(pre_trained_history, "loss")
 for key_left in losses:
     plot_graphs(pre_trained_history, key_left)
+
+
+# Have a peak at how the best predictions looked
+pre_trained_model.set_weights(early_stopping.get_best_weights())
+pred_train = pre_trained_model.predict(train_data_in)
+pred_test = pre_trained_model.predict(test_data_in)
+
+plt.figure(figsize=(11, 8), dpi=300)
+plt.title(EXP_STR)
+confusion_plot(train_data_out, pred_train, f"train")
+confusion_plot(test_data_out, pred_test, f"test")
+plt.hlines(y=trained_mean, xmin=0.0, xmax=9e8, color='grey', linestyles='dashed')
+plt.hlines(y=trained_median, xmin=0.0, xmax=9e8, color='grey', linestyles='dotted')
+plt.savefig(OUTPUT_DIR / "best-pretrained_confusion.png")
+
+plot_graphs(pre_trained_history, "loss")
+for key_left in losses:
+    plot_graphs(pre_trained_history, key_left, prefix='best')
+
+
+# Dump all relevant data for future plots if needed
+pkl.dump(train_data_in,open(OUTPUT_DIR/'train_data_in.pkl','wb'))
+pkl.dump(train_data_out,open(OUTPUT_DIR/'train_data_out.pkl', 'wb'))
+pkl.dump(test_data_in,open(OUTPUT_DIR/'test_data_in.pkl','wb'))
+pkl.dump(test_data_out,open(OUTPUT_DIR/'test_data_out.pkl', 'wb'))
+
+pkl.dump(pred_test,open(OUTPUT_DIR/'pred_test.pkl','wb'))
+pkl.dump(pred_train,open(OUTPUT_DIR/'pred_train.pkl','wb'))
+
+pkl.dump(pred_test,open(OUTPUT_DIR/'best-pred_test.pkl','wb'))
+pkl.dump(pred_train,open(OUTPUT_DIR/'best-pred_train.pkl','wb'))
 
 #PBS -lselect=1:ncpus=8:mem=48gb:ngpus=2:gpu_type=RTX6000
 #PBS -J 1-81
