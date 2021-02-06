@@ -296,7 +296,7 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(
     save_freq=2*TRAIN_STEPS_PER_EPOCH,
 )
 csv_logger = tf.keras.callbacks.CSVLogger(OUTPUT_DIR / 'training.csv',append=True)
-early_stopping = tf.keras.callbacks.EarlyStopping(patience=25, mode='min', restore_best_weights=False, verbose=1)
+early_stopping = tf.keras.callbacks.EarlyStopping(patience=100, mode='min', restore_best_weights=False, verbose=1)
 
 # class LearningRateLoggingCallback(tf.keras.callbacks.Callback):
 
@@ -335,7 +335,7 @@ for key_left in losses:
     plot_graphs(pre_trained_history, key_left)
 
 
-# Have a peak at how the best predictions looked
+# Have a peek at how the best predictions looked
 pre_trained_model.set_weights(early_stopping.get_best_weights())
 pred_train = pre_trained_model.predict(train_data_in)
 pred_test = pre_trained_model.predict(test_data_in)
@@ -347,10 +347,6 @@ confusion_plot(test_data_out, pred_test, f"test")
 plt.hlines(y=trained_mean, xmin=0.0, xmax=9e8, color='grey', linestyles='dashed')
 plt.hlines(y=trained_median, xmin=0.0, xmax=9e8, color='grey', linestyles='dotted')
 plt.savefig(OUTPUT_DIR / "best-pretrained_confusion.png")
-
-plot_graphs(pre_trained_history, "loss")
-for key_left in losses:
-    plot_graphs(pre_trained_history, key_left, prefix='best')
 
 
 # Dump all relevant data for future plots if needed

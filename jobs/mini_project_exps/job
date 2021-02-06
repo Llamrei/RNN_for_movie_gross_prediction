@@ -7,7 +7,7 @@ set +x
 echo "Started"
 date
 
-exp_vals=(mse-{'tfidf','learned'}-core)
+exp_vals=(mse-{'tfidf','learned','bert'}-core)
 # exp_vals=({'mse','mae','mape'}-{'tfidf','learned','bert'}-{'core','shallow_wide','deep_narrow','deep_wide'})
 no_exps="${#exp_vals[@]}"
 job="${PBS_JOBID%[*}"
@@ -28,6 +28,7 @@ mkdir -p $output_dir
 cd $script_dir
 
 module load anaconda3/personal
+module load cuda
 source activate tf2-w-text
 python experiment.py "$output_dir" "$input_data_path" "$exp_val" &>"$output_dir/stdout"
 
