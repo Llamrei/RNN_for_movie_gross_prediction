@@ -59,19 +59,17 @@ losses = {
 penalty_strat = None
 weight_decay = None
 dropout = None
-DROPOUT_RATE = 0.5
+DROPOUT_RATE = 0.1
 WEIGHT_DECAY_RATIO = 1e-3
-PENALTY_COEFF = 1
 
 if reg_strat == 'l1':
-    penalty_strat = tf.keras.regularizers.L1(l1=PENALTY_COEFF)
+        penalty_strat = tf.keras.regularizers.L1
 elif reg_strat == 'l2':
-    penalty_strat = tf.keras.regularizers.L2(l2=PENALTY_COEFF)
+    penalty_strat = tf.keras.regularizers.L2
 elif reg_strat == 'wd':
     weight_decay = True
 elif reg_strat == 'do':
     dropout = True
-
 
 if len(sys.argv) > 5:
     intra_threads = int(sys.argv[4])
@@ -282,30 +280,40 @@ def build_encoding(encoding_strat, text_input):
 
 def build_model(encoding_strat,model_strat):
     #TODO: Don't rely on global scope, should functionalise
-    args = {'activation':'relu','kernel_regularizer':penalty_strat, 'bias_regularizer':penalty_strat}
+    
+    def regularize(scale):
+        if penalty_strat:
+            return {'activation':'relu','kernel_regularizer':penalty_strat(scale), 'bias_regularizer':penalty_strat(scale)}
+        else:
+            return {'activation':'relu'}
+    
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string, name='text')
     net = build_encoding(encoding_strat, text_input)
     if model_strat == 'core':
-        net = tf.keras.layers.Dense(64, name='hidden-1', **args)(net)
+        scale = 2
+        net = tf.keras.layers.Dense(64, name='hidden-1', **regularize(scale))(net)
         if dropout:
             net = tf.keras.layers.Dropout(DROPOUT_RATE)(net)
-        net = tf.keras.layers.Dense(32, name='hidden-2', **args)(net)
+        net = tf.keras.layers.Dense(32, name='hidden-2', **regularize(scale))(net)
     elif model_strat == 'shallow_wide':
-        net = tf.keras.layers.Dense(2048, name='hidden-1', **args)(net)
+        scale = 1.5
+        net = tf.keras.layers.Dense(2048, name='hidden-1', **regularize(scale))(net)
         if dropout:
             net = tf.keras.layers.Dropout(DROPOUT_RATE)(net)
     elif model_strat == 'deep_narrow':
-        net = tf.keras.layers.Dense(64, name='hidden-1', **args)(net)
+        scale = 3
+        net = tf.keras.layers.Dense(64, name='hidden-1', **regularize(scale))(net)
         if dropout:
             net = tf.keras.layers.Dropout(DROPOUT_RATE)(net)
-        net = tf.keras.layers.Dense(32, name='hidden-2', **args)(net)
-        net = tf.keras.layers.Dense(16, name='hidden-3', **args)(net)
+        net = tf.keras.layers.Dense(32, name='hidden-2', **regularize(scale))(net)
+        net = tf.keras.layers.Dense(16, name='hidden-3', **regularize(scale))(net)
     elif model_strat == 'deep_wide':
-        net = tf.keras.layers.Dense(128, name='hidden-1', **args)(net)
+        scale = 3.5
+        net = tf.keras.layers.Dense(128, name='hidden-1', **regularize(scale))(net)
         if dropout:
             net = tf.keras.layers.Dropout(DROPOUT_RATE)(net)
-        net = tf.keras.layers.Dense(64, name='hidden-2', **args)(net)
-        net = tf.keras.layers.Dense(32, name='hidden-3', **args)(net)
+        net = tf.keras.layers.Dense(64, name='hidden-2', **regularize(scale))(net)
+        net = tf.keras.layers.Dense(32, name='hidden-3', **regularize(scale))(net)
     else:
         raise ValueError(f"Invalid architecture - {model_strat}")
     net = tf.keras.layers.Dense(1, name='classifier')(net)
