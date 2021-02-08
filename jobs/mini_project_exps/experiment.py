@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-
+#TODO: Make it so that it has a running save of the best graph
 """
 Follows 
 https://www.tensorflow.org/tutorials/text/text_classification_rnn
@@ -29,6 +29,10 @@ import tensorflow_text as text
 
 train_start = datetime.now()
 print(f"In Python {datetime.now()}")
+print("\n\nDevices")
+print(tf.config.list_physical_devices())
+print("\n\n")
+
 
 # How much it loads into memory for sampling - we're ok just loading everything at once as it isn't a lot of data
 BUFFER_SIZE = 10000
@@ -47,6 +51,25 @@ losses = {
     'mae':tf.keras.losses.MeanAbsoluteError(name='mae'),
     'mape':tf.keras.losses.MeanAbsolutePercentageError(name='mape')
 }
+
+if len(sys.argv) > 5:
+    intra_threads = int(sys.argv[4])
+    inter_threads = int(sys.argv[5])
+else:
+    intra_threads = 1
+    inter_threads = 1
+
+tf.config.threading.set_intra_op_parallelism_threads(
+    intra_threads
+)
+tf.config.threading.set_inter_op_parallelism_threads(
+    inter_threads
+)
+
+print("\n\nInter:")
+print(tf.config.threading.get_inter_op_parallelism_threads())
+print("\n\nIntra:")
+print(tf.config.threading.get_intra_op_parallelism_threads())    
 
 def plot_graphs(history, metric, prefix=''):
     if prefix:
@@ -135,7 +158,7 @@ def clean_copy(data, min_length=10, max_length=50, min_earning=0,max_earning=np.
     return cleaned_data
 
 
-def confusion_plot(lab, pred, name):
+def confusion_plot(lab, pred, name, ax):
     """
     Helper function to pile on scatter plots of labels and predictions that are real numbers
     marking a helpful black line for the truth
@@ -145,14 +168,14 @@ def confusion_plot(lab, pred, name):
 
     needs a call to plt.show() or plt.savefig() after it cumulatively builds this
     """
-    plt.scatter(lab, lab, label="truth", s=2, color="black")
-    plt.scatter(lab, pred, label=name, s=2)
-    handles, labels = plt.gca().get_legend_handles_labels()
+    ax.scatter(lab, lab, label="truth", s=2, color="black")
+    ax.scatter(lab, pred, label=name, s=2)
+    handles, labels = ax.get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
-    plt.legend(by_label.values(), by_label.keys())
-    plt.xlabel("Truth")
-    plt.ylabel("Prediction")
-    
+    ax.legend(by_label.values(), by_label.keys())
+    ax.set_xlabel("Truth")
+    ax.set_ylabel("Prediction")
+
 def data_split(data, valid_fraction, test_fraction, train_fraction=None):
     """
     Returns `data` split into (test_set, validation_set, training_set) where the 
@@ -208,7 +231,8 @@ def build_encoding(encoding_strat, text_input):
         net = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(10,name='LSTM'),name='Bidirectional')(net)
         return net
     elif encoding_strat == 'bert':
-        preprocessor = hub.load("https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3")
+        load_options = tf.saved_model.LoadOptions(experimental_io_device='/job:localhost')
+        preprocessor = hub.load("https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3", options=load_options)
 
         # Step 1: tokenize batches of text inputs.
         tokenize = hub.KerasLayer(preprocessor.tokenize, name='tokenizer')
@@ -235,7 +259,7 @@ def build_encoding(encoding_strat, text_input):
 
 # ## Build model
 
-def build_model(encoding_strat,model_strat):
+def build_model(encoding_strat,model_strat,reg_strat=None):
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string, name='text')
     net = build_encoding(encoding_strat, text_input)
     if model_strat == 'core':
@@ -305,6 +329,20 @@ early_stopping = tf.keras.callbacks.EarlyStopping(patience=100, mode='min', rest
 #         print(f'Learning rate {lr((epoch)*TRAIN_STEPS_PER_EPOCH)}')
 # lr = LearningRateLoggingCallback()
 
+# class AnimateConfusionCallback(tf.keras.callbacks.Callback):
+#     def __init__(self):
+#         super().__init__()
+#         self.fig = plt.figure()
+#         self.ax = self.fig.subplots()
+#         # self.ax.plot() get round to plotting truth seperately
+    
+#     def on_epoch_end(self, epoch, logs=None):
+#         predictions = dict()
+#         predictions['test'] = self.model.predict(test_data_in)
+#         predictions['train'] = self.model.predict(train_data_in)
+#         confusion_plot(test_data_out, predictions['test'], 'test', self.fig)
+#         confusion_plot(train_data_out, predictions['train'], 'train', self.fig)
+
 train_start = datetime.now()
 pre_trained_history = pre_trained_model.fit(
     train_dataset,
@@ -322,13 +360,14 @@ pred_test = pre_trained_model.predict(test_data_in)
 trained_mean = np.mean(train_data_out)
 trained_median = np.median(train_data_out)
 
-plt.figure(figsize=(11, 8), dpi=300)
-plt.title(EXP_STR)
-confusion_plot(train_data_out, pred_train, f"train")
-confusion_plot(test_data_out, pred_test, f"test")
-plt.hlines(y=trained_mean, xmin=0.0, xmax=9e8, color='grey', linestyles='dashed')
-plt.hlines(y=trained_median, xmin=0.0, xmax=9e8, color='grey', linestyles='dotted')
-plt.savefig(OUTPUT_DIR / "pretrained_confusion.png")
+fig = plt.figure(figsize=(11, 8), dpi=300)
+ax = fig.subplots()
+ax.set_title(EXP_STR)
+confusion_plot(train_data_out, pred_train, f"train", ax)
+confusion_plot(test_data_out, pred_test, f"test", ax)
+ax.hlines(y=trained_mean, xmin=0.0, xmax=9e8, color='grey', linestyles='dashed')
+ax.hlines(y=trained_median, xmin=0.0, xmax=9e8, color='grey', linestyles='dotted')
+fig.savefig(OUTPUT_DIR / "pretrained_confusion.png")
 
 plot_graphs(pre_trained_history, "loss")
 for key_left in losses:
@@ -340,13 +379,14 @@ pre_trained_model.set_weights(early_stopping.get_best_weights())
 pred_train = pre_trained_model.predict(train_data_in)
 pred_test = pre_trained_model.predict(test_data_in)
 
-plt.figure(figsize=(11, 8), dpi=300)
-plt.title(EXP_STR)
-confusion_plot(train_data_out, pred_train, f"train")
-confusion_plot(test_data_out, pred_test, f"test")
-plt.hlines(y=trained_mean, xmin=0.0, xmax=9e8, color='grey', linestyles='dashed')
-plt.hlines(y=trained_median, xmin=0.0, xmax=9e8, color='grey', linestyles='dotted')
-plt.savefig(OUTPUT_DIR / "best-pretrained_confusion.png")
+fig = plt.figure(figsize=(11, 8), dpi=300)
+ax = fig.subplots()
+ax.set_title(EXP_STR)
+confusion_plot(train_data_out, pred_train, f"train", ax)
+confusion_plot(test_data_out, pred_test, f"test", ax)
+ax.hlines(y=trained_mean, xmin=0.0, xmax=9e8, color='grey', linestyles='dashed')
+ax.hlines(y=trained_median, xmin=0.0, xmax=9e8, color='grey', linestyles='dotted')
+fig.savefig(OUTPUT_DIR / "best-pretrained_confusion.png")
 
 
 # Dump all relevant data for future plots if needed
