@@ -1,15 +1,16 @@
 #!/bin/bash
+#debug:
 #PBS -l select=1:ncpus=8:mem=24gb:ompthreads=8
 # PBS -lselect=1:ncpus=8:mem=48gb:ngpus=1:gpu_type=RTX6000
-#PBS -lwalltime=12:00:0
+#PBS -lwalltime=00:30:0
 # PBS -J 1-2
 
 echo "Started"
 date
 
-inter_threads=6
-intra_threads=2
-exp_vals=(mse-tfidf-core)
+inter_threads=2
+intra_threads=6
+exp_vals=(mse-tfidf-core-l2)
 # exp_vals=({'mse','mae','mape'}-{'tfidf','learned','bert'}-{'core','shallow_wide','deep_narrow','deep_wide'})
 # no_exps="${#exp_vals[@]}"
 job="${PBS_JOBID%[*}"

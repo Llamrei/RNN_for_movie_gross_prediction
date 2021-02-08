@@ -22,6 +22,7 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
+import tensorflow_addons as tfa
 import tensorflow_datasets as tfds
 # For pre-trained embeddings:
 import tensorflow_hub as hub
@@ -45,12 +46,26 @@ OUTPUT_DIR = Path(sys.argv[1])
 GROSS_SYNOPSES_PATH = sys.argv[2]
 EXP_STR = sys.argv[3]
 print(EXP_STR)
-loss_fn, embedding_strat, network_architecture = EXP_STR.split('-')
+loss_fn, embedding_strat, network_architecture, reg_strat = EXP_STR.split('-')
 losses = {
     'mse':tf.keras.losses.MeanSquaredError(name='mse'),
     'mae':tf.keras.losses.MeanAbsoluteError(name='mae'),
     'mape':tf.keras.losses.MeanAbsolutePercentageError(name='mape')
 }
+
+penalty_strat = None
+weight_decay = None
+dropout = None
+
+if reg_strat == 'l1':
+    penalty_strat = tf.keras.regularizers.L1(l1=0.01)
+elif reg_strat == 'l2':
+    penalty_strat = tf.keras.regularizers.L2(l2=0.01)
+elif reg_strat == 'wd':
+    weight_decay = True
+elif reg_strat == 'do':
+    dropout = True
+
 
 if len(sys.argv) > 5:
     intra_threads = int(sys.argv[4])
@@ -259,22 +274,32 @@ def build_encoding(encoding_strat, text_input):
 
 # ## Build model
 
-def build_model(encoding_strat,model_strat,reg_strat=None):
+def build_model(encoding_strat,model_strat):
+    #TODO: Don't rely on global scope, should functionalise
+    args = {'activation':'relu','kernel_regularizer':penalty_strat, 'bias_regularizer':penalty_strat}
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string, name='text')
     net = build_encoding(encoding_strat, text_input)
     if model_strat == 'core':
-        net = tf.keras.layers.Dense(64, activation='relu', name='hidden-1')(net)
-        net = tf.keras.layers.Dense(32, activation='relu', name='hidden-2')(net)
+        net = tf.keras.layers.Dense(64, name='hidden-1', **args)(net)
+        if dropout:
+            net = tf.keras.layers.Dropout(0.2)(net)
+        net = tf.keras.layers.Dense(32, name='hidden-2', **args)(net)
     elif model_strat == 'shallow_wide':
-        net = tf.keras.layers.Dense(2048, activation='relu', name='hidden-1')(net)
+        net = tf.keras.layers.Dense(2048, name='hidden-1', **args)(net)
+        if dropout:
+            net = tf.keras.layers.Dropout(0.2)(net)
     elif model_strat == 'deep_narrow':
-        net = tf.keras.layers.Dense(64, activation='relu', name='hidden-1')(net)
-        net = tf.keras.layers.Dense(32, activation='relu', name='hidden-2')(net)
-        net = tf.keras.layers.Dense(16, activation='relu', name='hidden-3')(net)
+        net = tf.keras.layers.Dense(64, name='hidden-1', **args)(net)
+        if dropout:
+            net = tf.keras.layers.Dropout(0.2)(net)
+        net = tf.keras.layers.Dense(32, name='hidden-2', **args)(net)
+        net = tf.keras.layers.Dense(16, name='hidden-3', **args)(net)
     elif model_strat == 'deep_wide':
-        net = tf.keras.layers.Dense(128, activation='relu', name='hidden-1')(net)
-        net = tf.keras.layers.Dense(64, activation='relu', name='hidden-2')(net)
-        net = tf.keras.layers.Dense(32, activation='relu', name='hidden-3')(net)
+        net = tf.keras.layers.Dense(128, name='hidden-1', **args)(net)
+        if dropout:
+            net = tf.keras.layers.Dropout(0.2)(net)
+        net = tf.keras.layers.Dense(64, name='hidden-2', **args)(net)
+        net = tf.keras.layers.Dense(32, name='hidden-3', **args)(net)
     else:
         raise ValueError(f"Invalid architecture - {model_strat}")
     net = tf.keras.layers.Dense(1, name='classifier')(net)
@@ -289,7 +314,10 @@ pre_trained_model = build_model(embedding_strat,network_architecture)
 #     decay_steps=25*TRAIN_STEPS_PER_EPOCH,
 #     decay_rate=0.1,
 #     staircase=True)
-optimizer = tf.keras.optimizers.Adam(0.1)
+if weight_decay:
+    optimizer = tfa.optimizers.AdamW(1e-1,1e-4)
+else:
+    optimizer = tf.keras.optimizers.Adam(0.1)
 
 loss = losses.pop(loss_fn)
 metrics = list(losses.values())
