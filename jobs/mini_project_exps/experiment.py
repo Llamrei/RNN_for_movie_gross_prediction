@@ -336,6 +336,7 @@ with open(OUTPUT_DIR/'model_summary.txt', 'w') as f:
     f.write(f'\n\n Loss:\n{loss.get_config()}')
     for metric in metrics:
         f.write(f'\n\n Metric:\n{metric.get_config()}')
+    f.write(f"\n\n Reg strat: {reg_strat}")
 
 checkpoint_dir = OUTPUT_DIR / "pre_trained_checkpoints"
 checkpoint_path = checkpoint_dir / "{epoch}"
