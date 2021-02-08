@@ -2,6 +2,9 @@
 # coding: utf-8
 
 #TODO: Make it so that it has a running save of the best graph
+#TODO: Use cross fold validation
+#TODO: Auto-tuning regularization params
+#TODO: Get weight decay working
 """
 Follows 
 https://www.tensorflow.org/tutorials/text/text_classification_rnn
@@ -56,11 +59,14 @@ losses = {
 penalty_strat = None
 weight_decay = None
 dropout = None
+DROPOUT_RATE = 0.5
+WEIGHT_DECAY_RATIO = 1e-3
+PENALTY_COEFF = 1
 
 if reg_strat == 'l1':
-    penalty_strat = tf.keras.regularizers.L1(l1=0.01)
+    penalty_strat = tf.keras.regularizers.L1(l1=PENALTY_COEFF)
 elif reg_strat == 'l2':
-    penalty_strat = tf.keras.regularizers.L2(l2=0.01)
+    penalty_strat = tf.keras.regularizers.L2(l2=PENALTY_COEFF)
 elif reg_strat == 'wd':
     weight_decay = True
 elif reg_strat == 'do':
@@ -282,22 +288,22 @@ def build_model(encoding_strat,model_strat):
     if model_strat == 'core':
         net = tf.keras.layers.Dense(64, name='hidden-1', **args)(net)
         if dropout:
-            net = tf.keras.layers.Dropout(0.2)(net)
+            net = tf.keras.layers.Dropout(DROPOUT_RATE)(net)
         net = tf.keras.layers.Dense(32, name='hidden-2', **args)(net)
     elif model_strat == 'shallow_wide':
         net = tf.keras.layers.Dense(2048, name='hidden-1', **args)(net)
         if dropout:
-            net = tf.keras.layers.Dropout(0.2)(net)
+            net = tf.keras.layers.Dropout(DROPOUT_RATE)(net)
     elif model_strat == 'deep_narrow':
         net = tf.keras.layers.Dense(64, name='hidden-1', **args)(net)
         if dropout:
-            net = tf.keras.layers.Dropout(0.2)(net)
+            net = tf.keras.layers.Dropout(DROPOUT_RATE)(net)
         net = tf.keras.layers.Dense(32, name='hidden-2', **args)(net)
         net = tf.keras.layers.Dense(16, name='hidden-3', **args)(net)
     elif model_strat == 'deep_wide':
         net = tf.keras.layers.Dense(128, name='hidden-1', **args)(net)
         if dropout:
-            net = tf.keras.layers.Dropout(0.2)(net)
+            net = tf.keras.layers.Dropout(DROPOUT_RATE)(net)
         net = tf.keras.layers.Dense(64, name='hidden-2', **args)(net)
         net = tf.keras.layers.Dense(32, name='hidden-3', **args)(net)
     else:
@@ -315,7 +321,7 @@ pre_trained_model = build_model(embedding_strat,network_architecture)
 #     decay_rate=0.1,
 #     staircase=True)
 if weight_decay:
-    optimizer = tfa.optimizers.AdamW(1e-1,1e-4)
+    optimizer = tfa.optimizers.AdamW(1e-1,1e-1*WEIGHT_DECAY_RATIO)
 else:
     optimizer = tf.keras.optimizers.Adam(0.1)
 
