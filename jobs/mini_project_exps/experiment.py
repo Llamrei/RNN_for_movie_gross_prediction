@@ -250,8 +250,11 @@ def build_encoding(encoding_strat, text_input):
         net = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(10,name='LSTM'),name='Bidirectional')(net)
         return net
     elif encoding_strat == 'bert':
-        load_options = tf.saved_model.LoadOptions(experimental_io_device='/job:localhost')
+        load_options = tf.saved_model.LoadOptions(experimental_io_device='/job:localhsost')
         preprocessor = hub.load("https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3", options=load_options)
+        print("\n\n\nHub resolve:")
+        print(hub.resolve("https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3"))
+        print("\n\n")
 
         # Step 1: tokenize batches of text inputs.
         tokenize = hub.KerasLayer(preprocessor.tokenize, name='tokenizer')
